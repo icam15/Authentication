@@ -1,14 +1,9 @@
-import express, { Request, Response } from "express";
-import { config } from "dotenv";
+import App from "./app";
 
-config();
-const app = express();
-const PORT = process.env.PORT || 8080;
+const main = () => {
+  const app = new App();
+  app.run();
+};
+main();
 
-app.get("/", (req: Request, res: Response) => {
-  res.send("Initial setup success");
-});
-
-app.listen(PORT, () => {
-  console.log(`Server running on PORT:${PORT}`);
-});
+export default main;
