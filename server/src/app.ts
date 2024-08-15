@@ -3,6 +3,7 @@ import cookieParser from "cookie-parser";
 import { config } from "dotenv";
 import { logger } from "./utils/logging";
 import RootRouter from "./routers/router";
+import { errorMiddleware } from "./middleware/errorMiddleware";
 
 config();
 export default class App {
@@ -26,7 +27,9 @@ export default class App {
       res.send("TEST NEW FILE ORDER");
     });
   }
-  private handleError() {}
+  private handleError() {
+    this.app.use(errorMiddleware);
+  }
 
   public run() {
     this.app.listen(this.PORT, () => {
