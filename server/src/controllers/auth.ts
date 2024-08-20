@@ -1,4 +1,4 @@
-import { VerifyAccountPayload } from "./../types/auth";
+import { LoginUserPayload, VerifyAccountPayload } from "./../types/auth";
 import { NextFunction, Request, Response } from "express";
 import { RegisterUserPayload } from "../types/auth";
 import { AuthService } from "../services/auth";
@@ -32,7 +32,20 @@ export class AuthController {
     }
   }
 
-  async loginUser() {}
+  async loginUser(req: Request, res: Response, next: NextFunction) {
+    try {
+      const payload = req.body as LoginUserPayload;
+      const validation = validate(AuthValidation.loginUserSchema, payload);
+      const result = await AuthService.loginUser(validation);
+      await generateAccessToken(res, result.user);
+      res.status(201).json({
+        result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async forgotPassword() {}
   async resetPassword() {}
   async logout() {}

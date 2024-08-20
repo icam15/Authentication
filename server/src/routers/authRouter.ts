@@ -1,6 +1,5 @@
 import { Router } from "express";
 import { AuthController } from "../controllers/auth";
-import { validate } from "../validation/validation";
 
 export default class AuthRouter {
   private router: Router;
@@ -16,6 +15,7 @@ export default class AuthRouter {
     // this.router.post("/api/test", () => {});
     this.router.post("/register", this.authController.registerUser);
     this.router.post("/verifyAccount", this.authController.accountVerify);
+    this.router.post("/login", this.authController.loginUser);
   }
 
   getRouter(): Router {

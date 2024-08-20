@@ -1,11 +1,12 @@
 import {
+  LoginUserPayload,
   RegisterUserPayload,
   toUserResponse,
   VerifyAccountPayload,
 } from "../types/auth";
 import { prisma } from "../db/prisma";
 import { ResponseError } from "../utils/helpers/responseError";
-import { hashedPassword } from "../utils/helpers/bcrypt";
+import { comparePassword, hashedPassword } from "../utils/helpers/bcrypt";
 import dayjs from "dayjs";
 import { sendVerificationEmail } from "../utils/email/email";
 
@@ -75,9 +76,27 @@ export class AuthService {
     return toUserResponse(updateUser, "Email Verified succesFully");
   }
 
-  static async loginUser() {}
+  static async loginUser(payload: LoginUserPayload) {
+    const existUser = await prisma.user.findUnique({
+      where: { email: payload.email },
+      include: { userToken: true },
+    });
+    if (!existUser) throw new ResponseError(400, "Account not found");
+    if (!existUser || !existUser.isVerified) {
+      throw new ResponseError(400, "Please verify your account");
+    }
+    const isPasswordValid = comparePassword(
+      payload.password,
+      existUser.password
+    );
+    if (!isPasswordValid)
+      throw new ResponseError(400, "Username or password invalid");
+    return toUserResponse(existUser, "Logged in success");
+  }
 
+  static async authStatus() {}
+
+  static async logout() {}
   static async forgotPassword() {}
   static async resetPassword() {}
-  static async logout() {}
 }
