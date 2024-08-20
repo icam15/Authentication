@@ -46,6 +46,17 @@ export class AuthController {
     }
   }
 
+  async authStatus(req: Request, res: Response, next: NextFunction) {
+    try {
+      const user = req.user;
+      res.status(201).json({
+        user,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   async forgotPassword() {}
   async resetPassword() {}
   async logout() {}
