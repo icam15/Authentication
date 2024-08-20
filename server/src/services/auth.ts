@@ -1,4 +1,8 @@
-import { RegisterUserPayload, toUserResponse } from "../types/auth";
+import {
+  RegisterUserPayload,
+  toUserResponse,
+  VerifyAccountPayload,
+} from "../types/auth";
 import { prisma } from "../db/prisma";
 import { ResponseError } from "../utils/helpers/responseError";
 import { hashedPassword } from "../utils/helpers/bcrypt";
@@ -7,13 +11,13 @@ import { sendVerificationEmail } from "../utils/email/email";
 
 export class AuthService {
   static async registerUser(payload: RegisterUserPayload) {
-    const ifUserExists = await prisma.user.count({
+    const existUser = await prisma.user.count({
       where: {
         email: payload.email,
       },
     });
 
-    if (ifUserExists > 0) {
+    if (existUser > 0) {
       throw new ResponseError(400, "This email was already exist");
     }
 
@@ -44,8 +48,35 @@ export class AuthService {
     );
   }
 
+  static async accountVerify(payload: VerifyAccountPayload) {
+    const userWithTheToken = await prisma.user.findFirst({
+      where: {
+        userToken: { verification_token: payload.token },
+      },
+    });
+    if (!userWithTheToken) {
+      throw new ResponseError(404, "user with the token does not exist");
+    }
+    const token = await prisma.userToken.findFirst({
+      where: {
+        verification_token: payload.token,
+      },
+    });
+    const TokenExp = dayjs(token?.verification_token_exp).isBefore(dayjs());
+    if (TokenExp) {
+      throw new ResponseError(400, "Token expired");
+    }
+    const updateUser = await prisma.user.update({
+      data: {
+        isVerified: true,
+      },
+      where: { id: userWithTheToken.id },
+    });
+    return toUserResponse(updateUser, "Email Verified succesFully");
+  }
+
   static async loginUser() {}
-  static async accountVerify() {}
+
   static async forgotPassword() {}
   static async resetPassword() {}
   static async logout() {}

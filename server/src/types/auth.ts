@@ -1,7 +1,7 @@
 import { User } from "@prisma/client";
 
 export type AuthJwtPayload = {
-  userId: number;
+  id: number;
   email: string;
 };
 

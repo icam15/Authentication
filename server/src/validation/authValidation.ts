@@ -13,6 +13,6 @@ export class AuthValidation {
   });
 
   static readonly verifyAccountSchema: ZodType = z.object({
-    token: z.string(),
+    token: z.string().min(6).max(6),
   });
 }
