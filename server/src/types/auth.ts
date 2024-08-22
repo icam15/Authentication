@@ -20,6 +20,10 @@ export type VerifyAccountPayload = {
   token: string;
 };
 
+export type ForgotPasswordPayload = {
+  email: string;
+};
+
 export type UserResponse = {
   status: string;
   message: string | {} | [];
@@ -27,6 +31,10 @@ export type UserResponse = {
     id: number;
     email: string;
   };
+};
+
+export type ResetPasswordPayload = {
+  newPassword: "string";
 };
 
 export function toUserResponse(user: User, message: string): UserResponse {

@@ -10,6 +10,15 @@ export const sendVerificationEmail = async (verificationToken: string) => {
     html: `<p>Your verification token : ${verificationToken}</P>`,
   });
 };
+
+export const sendResetPasswordLink = async (resetPasswordToken: string) => {
+  await resend.emails.send({
+    from: "Acme <oboarding@resend.dev>",
+    to: ["bianskiza@gmail.com"],
+    subject: "Reset password link",
+    html: `<p>Your reset passwrod link https://clientUrl/reset-password/${resetPasswordToken} </p>`,
+  });
+};
+
 const sendWelcomeEmail = async () => {};
-const sendPasswordResetEmail = async () => {};
 const sendResetPasswordSuccess = async () => {};

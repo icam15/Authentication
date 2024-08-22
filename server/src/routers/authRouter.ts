@@ -15,9 +15,12 @@ export default class AuthRouter {
   private initializeRoutes(): void {
     // this.router.post("/api/test", () => {});
     this.router.post("/register", this.authController.registerUser);
-    this.router.post("/verifyAccount", this.authController.accountVerify);
     this.router.post("/login", this.authController.loginUser);
+    this.router.post("/verifyAccount", this.authController.accountVerify);
     this.router.get("/status", verifyAuthToken, this.authController.authStatus);
+    this.router.get("/logout", verifyAuthToken, this.authController.logout);
+    this.router.post("/forgot-password", this.authController.forgotPassword);
+    this.router.post("/reset-password");
   }
 
   getRouter(): Router {
