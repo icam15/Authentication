@@ -1,6 +1,7 @@
 import {
   ForgotPasswordPayload,
   LoginUserPayload,
+  ResetPasswordPayload,
   VerifyAccountPayload,
 } from "./../types/auth";
 import { NextFunction, Request, Response } from "express";
@@ -13,9 +14,11 @@ import { generateAccessToken } from "../utils/helpers/jwtToken";
 export class AuthController {
   async registerUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const payload = req.body as RegisterUserPayload;
-      const validation = validate(AuthValidation.registerUserSchema, payload);
-      const result = await AuthService.registerUser(validation);
+      const payload = validate(
+        AuthValidation.registerUserSchema,
+        req.body as RegisterUserPayload
+      );
+      const result = await AuthService.registerUser(payload);
       res.status(201).json(result);
     } catch (error) {
       next(error);
@@ -24,9 +27,11 @@ export class AuthController {
 
   async accountVerify(req: Request, res: Response, next: NextFunction) {
     try {
-      const payload = req.body as VerifyAccountPayload;
-      const validation = validate(AuthValidation.verifyAccountSchema, payload);
-      const result = await AuthService.accountVerify(validation);
+      const payload = validate(
+        AuthValidation.verifyAccountSchema,
+        req.body as VerifyAccountPayload
+      );
+      const result = await AuthService.accountVerify(payload);
       await generateAccessToken(res, result.user);
       res.status(200).json(result);
     } catch (error) {
@@ -36,9 +41,11 @@ export class AuthController {
 
   async loginUser(req: Request, res: Response, next: NextFunction) {
     try {
-      const payload = req.body as LoginUserPayload;
-      const validation = validate(AuthValidation.loginUserSchema, payload);
-      const result = await AuthService.loginUser(validation);
+      const payload = validate(
+        AuthValidation.loginUserSchema,
+        req.body as LoginUserPayload
+      );
+      const result = await AuthService.loginUser(payload);
       await generateAccessToken(res, result.user);
       res.status(201).json(result);
     } catch (error) {
@@ -73,7 +80,7 @@ export class AuthController {
   async forgotPassword(req: Request, res: Response, next: NextFunction) {
     try {
       const payload = validate(
-        AuthValidation.ForgotPasswordSchema,
+        AuthValidation.forgotPasswordSchema,
         req.body as ForgotPasswordPayload
       );
       await AuthService.forgotPassword(payload);
@@ -92,6 +99,16 @@ export class AuthController {
     next: NextFunction
   ) {
     try {
+      const { resetPasswordToken } = req.params;
+      const payload = validate(
+        AuthValidation.resetPasswordSchme,
+        req.body as ResetPasswordPayload
+      );
+      await AuthService.resetPassword(payload, resetPasswordToken);
+      res.status(201).json({
+        status: "success",
+        message: "password reset success",
+      });
     } catch (error) {
       next(error);
     }

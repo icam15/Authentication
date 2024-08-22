@@ -16,11 +16,11 @@ export class AuthValidation {
     token: z.string().min(6).max(6),
   });
 
-  static readonly ForgotPasswordSchema: ZodType = z.object({
+  static readonly forgotPasswordSchema: ZodType = z.object({
     email: z.string().email(),
   });
 
-  static readonly ResetPasswordSchme: ZodType = z.object({
+  static readonly resetPasswordSchme: ZodType = z.object({
     newPassword: z.string().min(8),
   });
 }

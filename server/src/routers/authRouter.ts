@@ -20,7 +20,10 @@ export default class AuthRouter {
     this.router.get("/status", verifyAuthToken, this.authController.authStatus);
     this.router.get("/logout", verifyAuthToken, this.authController.logout);
     this.router.post("/forgot-password", this.authController.forgotPassword);
-    this.router.post("/reset-password");
+    this.router.post(
+      "/reset-password/:resetPasswordToken",
+      this.authController.resetPassword
+    );
   }
 
   getRouter(): Router {

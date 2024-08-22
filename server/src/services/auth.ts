@@ -146,13 +146,13 @@ export class AuthService {
     const resetPasswordToken = Math.floor(
       100000 + Math.random() * 900000
     ).toString();
-    const resetPasswordTokenExp = dayjs().add(1, "hour").toDate();
+    const resetPasswordTokenExpAt = dayjs().add(1, "hour").toDate();
     await prisma.user.update({
       data: {
         userToken: {
           update: {
             reset_password_token: resetPasswordToken,
-            reset_password_token_exp: resetPasswordTokenExp,
+            reset_password_token_exp: resetPasswordTokenExpAt,
           },
         },
       },
@@ -170,6 +170,32 @@ export class AuthService {
     const existUser = await prisma.user.findFirst({
       where: {
         userToken: { reset_password_token: resetPasswordToken },
+      },
+      include: { userToken: true },
+    });
+    if (!existUser) {
+      throw new ResponseError(404, "Account not found");
+    }
+    const resetTokenExp = dayjs(
+      existUser?.userToken?.reset_password_token_exp
+    ).isBefore(dayjs());
+
+    if (resetTokenExp) {
+      throw new ResponseError(400, "Reset Token Expired");
+    }
+
+    const hashedNewpassword = hashedPassword(payload.newPassword);
+
+    // Create new password and clear reset token
+    await prisma.user.update({
+      data: {
+        password: hashedNewpassword,
+        userToken: {
+          update: { reset_password_token: "", reset_password_token_exp: null },
+        },
+      },
+      where: {
+        id: existUser.id,
       },
     });
   }
