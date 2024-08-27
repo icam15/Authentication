@@ -5,6 +5,7 @@ import {
   RegisterUserPayload,
   ResetPasswordPayload,
   toUserResponse,
+  UserServiceResponse,
   VerifyAccountPayload,
 } from "../types/auth";
 import { prisma } from "../db/prisma";
@@ -15,24 +16,29 @@ import {
   sendResetPasswordLink,
   sendVerificationEmail,
 } from "../utils/email/email";
+import {
+  generateResetPasswordToken,
+  generateVerifyAccountToken,
+} from "../utils/token/verirfy-token";
+import { string } from "zod";
+import { Response } from "express";
 
 export class AuthService {
-  static async registerUser(payload: RegisterUserPayload) {
+  static async registerUser(
+    payload: RegisterUserPayload
+  ): Promise<{ email: string }> {
     const existUser = await prisma.user.count({
       where: {
         email: payload.email,
       },
     });
-
     if (existUser > 0) {
       throw new ResponseError(400, "This email was already exist");
     }
 
     const hashPassword = hashedPassword(payload.password);
-    const verificationToken = Math.floor(
-      100000 + Math.random() * 900000
-    ).toString();
-    const verificationTokenExp = dayjs().add(1, "hour").toDate();
+    const verifyToken = generateVerifyAccountToken();
+
     const newUser = await prisma.user.create({
       data: {
         email: payload.email,
@@ -40,30 +46,21 @@ export class AuthService {
         username: payload.username,
         userToken: {
           create: {
-            verification_token: verificationToken,
-            verification_token_exp: verificationTokenExp,
+            verification_token: verifyToken.token,
+            verification_token_exp: verifyToken.tokenExp,
           },
         },
       },
     });
 
     // and send email contain verication token
-    await sendVerificationEmail(verificationToken);
-    return toUserResponse(
-      newUser,
-      "User created, Please check your email to get the verification token"
-    );
+    await sendVerificationEmail(verifyToken.token);
+    return { email: newUser.email };
   }
 
-  static async accountVerify(payload: VerifyAccountPayload) {
-    const userWithTheToken = await prisma.user.findFirst({
-      where: {
-        userToken: { verification_token: payload.token },
-      },
-    });
-    if (!userWithTheToken) {
-      throw new ResponseError(404, "user with the token does not exist");
-    }
+  static async accountVerify(
+    payload: VerifyAccountPayload
+  ): Promise<UserServiceResponse> {
     const existToken = await prisma.userToken.findFirst({
       where: {
         verification_token: payload.token,
@@ -82,12 +79,14 @@ export class AuthService {
       data: {
         isVerified: true,
       },
-      where: { id: userWithTheToken.id },
+      where: { id: existToken.userId },
     });
-    return toUserResponse(updateUser, "Email Verified succesFully");
+    return toUserResponse(updateUser);
   }
 
-  static async loginUser(payload: LoginUserPayload) {
+  static async loginUser(
+    payload: LoginUserPayload
+  ): Promise<UserServiceResponse> {
     const existUser = await prisma.user.findUnique({
       where: { email: payload.email },
       include: { userToken: true },
@@ -102,7 +101,7 @@ export class AuthService {
     );
     if (!isPasswordValid)
       throw new ResponseError(400, "Username or password invalid");
-    return toUserResponse(existUser, "Logged in success");
+    return toUserResponse(existUser);
   }
 
   static async authStatus(payload: AuthJwtPayload) {
@@ -118,7 +117,7 @@ export class AuthService {
     if (existUser.isVerified === false) {
       throw new ResponseError(400, "User Unauthenticated");
     }
-    return toUserResponse(existUser, "User Authenticated");
+    return toUserResponse(existUser);
   }
 
   static async logout(payload: AuthJwtPayload) {
@@ -134,7 +133,9 @@ export class AuthService {
     }
   }
 
-  static async forgotPassword(payload: ForgotPasswordPayload) {
+  static async forgotPassword(
+    payload: ForgotPasswordPayload
+  ): Promise<{ email: string }> {
     const existUser = await prisma.user.findFirst({
       where: {
         email: payload.email,
@@ -143,16 +144,14 @@ export class AuthService {
     if (!existUser) {
       throw new ResponseError(404, "Account not found");
     }
-    const resetPasswordToken = Math.floor(
-      100000 + Math.random() * 900000
-    ).toString();
-    const resetPasswordTokenExpAt = dayjs().add(1, "hour").toDate();
+
+    const resetToken = generateResetPasswordToken(existUser.email);
     await prisma.user.update({
       data: {
         userToken: {
           update: {
-            reset_password_token: resetPasswordToken,
-            reset_password_token_exp: resetPasswordTokenExpAt,
+            reset_password_token: resetToken.token,
+            reset_password_token_exp: resetToken.tokenExp,
           },
         },
       },
@@ -160,7 +159,8 @@ export class AuthService {
         email: payload.email,
       },
     });
-    await sendResetPasswordLink(resetPasswordToken);
+    await sendResetPasswordLink(resetToken.token);
+    return { email: existUser.email };
   }
 
   static async resetPassword(
@@ -197,6 +197,34 @@ export class AuthService {
       where: {
         id: existUser.id,
       },
+    });
+  }
+
+  static async getSession(userId: number): Promise<UserServiceResponse> {
+    const user = await prisma.user.findUnique({
+      where: {
+        id: userId,
+        isVerified: true,
+      },
+    });
+
+    return { id: user!.id, username: user?.username, email: user!.email };
+  }
+
+  static async sendAuthTokens(
+    res: Response,
+    refreshToken: string,
+    accessToken: string
+  ) {
+    res.cookie("accessToken", accessToken, {
+      httpOnly: true,
+      maxAge: 1000 * 60 * 10,
+      path: "/",
+    });
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 1000 * 60 * 60,
+      path: "/",
     });
   }
 }

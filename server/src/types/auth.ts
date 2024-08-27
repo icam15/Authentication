@@ -24,23 +24,20 @@ export type ForgotPasswordPayload = {
   email: string;
 };
 
-export type UserResponse = {
-  status: string;
-  message: string | {} | [];
-  user: {
-    id: number;
-    email: string;
-  };
+export type UserServiceResponse = {
+  id: number;
+  email: string;
+  username?: string;
 };
 
 export type ResetPasswordPayload = {
   newPassword: "string";
 };
 
-export function toUserResponse(user: User, message: string): UserResponse {
+export function toUserResponse(user: User): UserServiceResponse {
   return {
-    status: "success",
-    message: message,
-    user: { id: user.id, email: user.email },
+    id: user.id,
+    email: user.email,
+    username: user?.username,
   };
 }

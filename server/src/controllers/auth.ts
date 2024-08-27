@@ -1,4 +1,5 @@
 import {
+  AuthJwtPayload,
   ForgotPasswordPayload,
   LoginUserPayload,
   ResetPasswordPayload,
@@ -10,6 +11,7 @@ import { AuthService } from "../services/auth";
 import { validate } from "../validation/validation";
 import { AuthValidation } from "../validation/authValidation";
 import { generateAccessToken } from "../utils/helpers/jwtToken";
+import { generateAuthTokens } from "../utils/token/auth-token";
 
 export class AuthController {
   async registerUser(req: Request, res: Response, next: NextFunction) {
@@ -18,8 +20,11 @@ export class AuthController {
         AuthValidation.registerUserSchema,
         req.body as RegisterUserPayload
       );
-      const result = await AuthService.registerUser(payload);
-      res.status(201).json(result);
+      const { email } = await AuthService.registerUser(payload);
+      res.status(201).json({
+        status: "success",
+        message: `User created, Verification code was send to ${email}`,
+      });
     } catch (error) {
       next(error);
     }
@@ -32,8 +37,14 @@ export class AuthController {
         req.body as VerifyAccountPayload
       );
       const result = await AuthService.accountVerify(payload);
-      await generateAccessToken(res, result.user);
-      res.status(200).json(result);
+      const { accessToken, refreshToken } = generateAuthTokens(
+        result as AuthJwtPayload
+      );
+      await AuthService.sendAuthTokens(res, refreshToken, accessToken);
+      res.status(200).json({
+        status: "success",
+        message: "Email verify successfully",
+      });
     } catch (error) {
       next(error);
     }
@@ -46,8 +57,14 @@ export class AuthController {
         req.body as LoginUserPayload
       );
       const result = await AuthService.loginUser(payload);
-      await generateAccessToken(res, result.user);
-      res.status(201).json(result);
+      const { accessToken, refreshToken } = generateAuthTokens(
+        result as AuthJwtPayload
+      );
+      await AuthService.sendAuthTokens(res, refreshToken, accessToken);
+      res.status(201).json({
+        status: "success",
+        message: "Logged in success",
+      });
     } catch (error) {
       next(error);
     }
@@ -67,7 +84,8 @@ export class AuthController {
     try {
       const payload = req.user;
       await AuthService.logout(payload);
-      res.clearCookie("fs_auth_accessToken");
+      res.clearCookie("accessToken");
+      res.clearCookie("refreshToken");
       res.status(201).json({
         status: "success",
         message: "Logged out success",
@@ -83,10 +101,10 @@ export class AuthController {
         AuthValidation.forgotPasswordSchema,
         req.body as ForgotPasswordPayload
       );
-      await AuthService.forgotPassword(payload);
+      const { email } = await AuthService.forgotPassword(payload);
       res.status(201).json({
         status: "success",
-        message: "password reset link send to your email",
+        message: `password reset link send to your email ${email}`,
       });
     } catch (error) {
       next(error);
@@ -108,6 +126,20 @@ export class AuthController {
       res.status(201).json({
         status: "success",
         message: "password reset success",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async session(req: Request, res: Response, next: NextFunction) {
+    try {
+      const getSession = req.user;
+      const result = await AuthService.getSession(getSession.id);
+      res.status(201).json({
+        status: "success",
+        message: "your session is available",
+        data: result,
       });
     } catch (error) {
       next(error);

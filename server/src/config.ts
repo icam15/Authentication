@@ -6,6 +6,7 @@ const envSchema = z.object({
   JWT_REFRESH_SECRET: z.string(),
   DATABASE_URL: z.string(),
   RESEND_API_KEY: z.string(),
+  JWT_RESET_PASSWORD: z.string(),
 });
 
 declare global {

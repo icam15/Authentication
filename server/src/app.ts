@@ -7,7 +7,7 @@ import { errorMiddleware } from "./middleware/errorMiddleware";
 
 config();
 export default class App {
-  private app: Express;
+  app: Express;
   private PORT = process.env.PORT;
   constructor() {
     this.app = express();
