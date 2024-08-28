@@ -1,6 +1,7 @@
 import App from "../app";
 import supertest from "supertest";
 import { UserTest } from "./utils";
+import { logger } from "../libs/logging";
 
 const test = new App();
 
@@ -20,8 +21,9 @@ describe("POST /api/auth/register", () => {
     expect(response.status).toBe(201);
   });
 });
+
 // 2. LOGIN
-describe.only("POST /api/auth/login", () => {
+describe("POST /api/auth/login", () => {
   beforeEach(async () => {
     await UserTest.createUserTest();
   });
@@ -44,6 +46,14 @@ describe.only("POST /api/auth/login", () => {
 
 // 3. VERIFY ACCOUNT
 describe("POST /api/auth/verify-account", () => {
+  beforeEach(async () => {
+    await UserTest.createUserTest();
+  });
+
+  afterEach(async () => {
+    await UserTest.deleteUserTest();
+  });
+
   it("Should be able to verify account", async () => {
     const response = await supertest(test.app)
       .post("/api/auth/verify-account")
@@ -51,15 +61,39 @@ describe("POST /api/auth/verify-account", () => {
         token: "123456",
       });
 
+    console.log(response.body);
     expect(response.status).toBe(201);
   });
 });
 
+// On this step
+
 // 4. SESSION
-describe("GET /api/auth/session", () => {
+describe.only("GET /api/auth/session", () => {
+  beforeEach(async () => {
+    await UserTest.createUserTest();
+  });
+
+  afterEach(async () => {
+    await UserTest.deleteUserTest();
+  });
+
+  // let user;
+
+  it("Should login test", async () => {
+    const response = await supertest(test.app).post("/api/auth/login").send({
+      email: "bianskiza@gmail.com",
+      password: "testtest",
+    });
+    logger.debug(response.error);
+    console.log(response.header);
+    expect(response.status).toBe(201);
+  });
+
   it("Should be able to get session user", async () => {
     const response = await supertest(test.app).get("/api/auth/session");
 
+    logger.debug(response);
     expect(response.status).toBe(201);
   });
 });

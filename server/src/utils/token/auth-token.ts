@@ -13,17 +13,17 @@ export const generateRefreshToken = (payload: AuthJwtPayload): string => {
   });
 };
 
-export const verifyAccessToken = (token: string) => {
+export const verifyAccessToken = (accessToken: string) => {
   try {
-    jwt.verify(token, process.env.JWT_REFRESH_SECRET!);
+    return jwt.verify(accessToken, process.env.JWT_ACCESS_SECRET!);
   } catch (error) {
     throw error;
   }
 };
 
-export const verifyRefreshToken = (token: string) => {
+export const verifyRefreshToken = (refreshToken: string) => {
   try {
-    jwt.verify(token, process.env.JWT_ACCESS_SECRET!);
+    return jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
   } catch (error) {
     throw error;
   }

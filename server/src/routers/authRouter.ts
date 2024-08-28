@@ -17,16 +17,18 @@ export default class AuthRouter {
     this.router.post("/register", this.authController.registerUser);
     this.router.post("/login", this.authController.loginUser);
     this.router.post("/verify-account", this.authController.accountVerify);
-    this.router.get(
-      "/session",
-      verifyAuthToken,
-      this.authController.authStatus
-    );
+    this.router.get("/session", verifyAuthToken, this.authController.session);
     this.router.get("/logout", verifyAuthToken, this.authController.logout);
     this.router.post("/forgot-password", this.authController.forgotPassword);
     this.router.post(
       "/reset-password/:resetPasswordToken",
       this.authController.resetPassword
+    );
+    this.router.get("/refresh-token", this.authController.refreshToken);
+    this.router.get("/google", this.authController.googleOauth);
+    this.router.get(
+      "/google/redirect",
+      this.authController.googleOauthCallback
     );
   }
 

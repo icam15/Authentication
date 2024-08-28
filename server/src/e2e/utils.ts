@@ -1,4 +1,4 @@
-import { prisma } from "../db/prisma";
+import { prisma } from "../libs/prisma";
 import { hashedPassword } from "../utils/helpers/bcrypt";
 
 export class UserTest {
@@ -12,18 +12,13 @@ export class UserTest {
   }
 
   static async createUserTest() {
-    const user = await prisma.user.create({
+    await prisma.user.create({
       data: {
         email: "bianskiza@gmail.com",
         username: "test",
         password: hashedPassword("testtest"),
         isVerified: true,
-        userToken: { create: { verification_token: "000999" } },
-      },
-    });
-    await prisma.userToken.create({
-      data: {
-        userId: user.id,
+        userToken: { create: { verification_token: "123456" } },
       },
     });
   }

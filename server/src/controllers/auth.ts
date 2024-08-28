@@ -1,3 +1,4 @@
+import { string } from "zod";
 import {
   AuthJwtPayload,
   ForgotPasswordPayload,
@@ -12,6 +13,8 @@ import { validate } from "../validation/validation";
 import { AuthValidation } from "../validation/authValidation";
 import { generateAccessToken } from "../utils/helpers/jwtToken";
 import { generateAuthTokens } from "../utils/token/auth-token";
+import { ResponseError } from "../utils/helpers/responseError";
+import { oauthUrl } from "../libs/oauth2/google";
 
 export class AuthController {
   async registerUser(req: Request, res: Response, next: NextFunction) {
@@ -41,7 +44,7 @@ export class AuthController {
         result as AuthJwtPayload
       );
       await AuthService.sendAuthTokens(res, refreshToken, accessToken);
-      res.status(200).json({
+      res.status(201).json({
         status: "success",
         message: "Email verify successfully",
       });
@@ -65,16 +68,6 @@ export class AuthController {
         status: "success",
         message: "Logged in success",
       });
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  async authStatus(req: Request, res: Response, next: NextFunction) {
-    try {
-      const payload = req.user;
-      const result = await AuthService.authStatus(payload);
-      res.status(201).json(result);
     } catch (error) {
       next(error);
     }
@@ -140,6 +133,51 @@ export class AuthController {
         status: "success",
         message: "your session is available",
         data: result,
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async refreshToken(req: Request, res: Response, next: NextFunction) {
+    try {
+      const { refreshToken } = req.cookies;
+      if (!refreshToken) {
+        throw new ResponseError(401, "Refresh token not found");
+      }
+      const { accessToken, refreshToken: refresh_token } =
+        await AuthService.refreshToken(refreshToken);
+      await AuthService.sendAuthTokens(res, refresh_token, accessToken);
+      res.status(201).json({
+        status: "success",
+        message: "Refresh token success",
+      });
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async googleOauth(req: Request, res: Response, next: NextFunction) {
+    try {
+      res.redirect(oauthUrl);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+  async googleOauthCallback(
+    req: Request<{}, {}, {}, { code: string }>,
+    res: Response,
+    next: NextFunction
+  ) {
+    try {
+      const { code } = req.query;
+      const user = await AuthService.loginUserGoogle(code);
+      const { accessToken, refreshToken } = generateAuthTokens(user);
+      await AuthService.sendAuthTokens(res, refreshToken, accessToken);
+      res.status(201).json({
+        status: "success",
+        message: "Account was success created",
       });
     } catch (error) {
       next(error);

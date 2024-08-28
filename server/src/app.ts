@@ -1,9 +1,10 @@
 import express, { Express, json, Request, Response } from "express";
 import cookieParser from "cookie-parser";
 import { config } from "dotenv";
-import { logger } from "./utils/logging";
+
 import RootRouter from "./routers/router";
 import { errorMiddleware } from "./middleware/errorMiddleware";
+import { logger } from "./libs/log";
 
 config();
 export default class App {

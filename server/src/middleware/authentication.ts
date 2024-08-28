@@ -4,10 +4,6 @@ import { ResponseError } from "../utils/helpers/responseError";
 import { VerifyErrors } from "jsonwebtoken";
 import * as jwt from "jsonwebtoken";
 
-export type RequestWithUser = {
-  user: AuthJwtPayload;
-};
-
 declare global {
   namespace Express {
     interface Request {
@@ -15,6 +11,17 @@ declare global {
     }
   }
 }
+
+type DecodeJWt = {
+  header: { alg: string; typ: string };
+  payload: {
+    id: number;
+    email: string;
+    iat: number;
+    exp: number;
+  };
+  signature: string;
+};
 
 export const verifyAuthToken = async (
   req: Request,
@@ -29,14 +36,15 @@ export const verifyAuthToken = async (
       accessToken,
       process.env.JWT_ACCESS_SECRET!,
       { complete: true },
-      function <T>(err: any, decoded: T | AuthJwtPayload | string) {
+      function (err: any, decoded: DecodeJWt | any) {
         if (err instanceof jwt.TokenExpiredError) {
           throw new ResponseError(403, "Token Expired");
         } else {
-          req.user = decoded as AuthJwtPayload;
+          req.user = decoded.payload;
         }
       }
     );
+
     next();
   } catch (error) {
     next(error);

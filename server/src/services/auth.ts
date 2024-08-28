@@ -1,3 +1,4 @@
+import { google } from "googleapis";
 import {
   AuthJwtPayload,
   ForgotPasswordPayload,
@@ -8,7 +9,7 @@ import {
   UserServiceResponse,
   VerifyAccountPayload,
 } from "../types/auth";
-import { prisma } from "../db/prisma";
+import { prisma } from "../libs/prisma";
 import { ResponseError } from "../utils/helpers/responseError";
 import { comparePassword, hashedPassword } from "../utils/helpers/bcrypt";
 import dayjs from "dayjs";
@@ -22,6 +23,12 @@ import {
 } from "../utils/token/verirfy-token";
 import { string } from "zod";
 import { Response } from "express";
+import {
+  generateAuthTokens,
+  verifyRefreshToken,
+} from "../utils/token/auth-token";
+import { oauth2Client } from "../libs/oauth2/google";
+import { User } from "@prisma/client";
 
 export class AuthService {
   static async registerUser(
@@ -101,22 +108,6 @@ export class AuthService {
     );
     if (!isPasswordValid)
       throw new ResponseError(400, "Username or password invalid");
-    return toUserResponse(existUser);
-  }
-
-  static async authStatus(payload: AuthJwtPayload) {
-    const existUser = await prisma.user.findFirst({
-      where: {
-        id: payload.id,
-        isVerified: true,
-      },
-    });
-    if (!existUser) {
-      throw new ResponseError(404, "Account not found");
-    }
-    if (existUser.isVerified === false) {
-      throw new ResponseError(400, "User Unauthenticated");
-    }
     return toUserResponse(existUser);
   }
 
@@ -203,12 +194,31 @@ export class AuthService {
   static async getSession(userId: number): Promise<UserServiceResponse> {
     const user = await prisma.user.findUnique({
       where: {
-        id: userId,
+        id: userId!,
         isVerified: true,
       },
     });
 
     return { id: user!.id, username: user?.username, email: user!.email };
+  }
+
+  static async refreshToken(
+    refreshTokenAuth: string
+  ): Promise<{ accessToken: string; refreshToken: string }> {
+    const { id, email } = verifyRefreshToken(
+      refreshTokenAuth
+    ) as AuthJwtPayload;
+
+    const existUser = await prisma.user.count({
+      where: {
+        id,
+        isVerified: true,
+      },
+    });
+    if (existUser < 0) throw new ResponseError(400, "Accoun not found");
+
+    const { accessToken, refreshToken } = generateAuthTokens({ id, email });
+    return { accessToken, refreshToken };
   }
 
   static async sendAuthTokens(
@@ -226,5 +236,35 @@ export class AuthService {
       maxAge: 1000 * 60 * 60,
       path: "/",
     });
+  }
+
+  static async loginUserGoogle(code: string): Promise<UserServiceResponse> {
+    const { tokens } = await oauth2Client.getToken(code);
+    oauth2Client.setCredentials(tokens);
+
+    const oauth2 = google.oauth2({
+      auth: oauth2Client,
+      version: "v2",
+    });
+
+    const { data } = await oauth2.userinfo.get();
+
+    let findUser = await prisma.user.findFirst({
+      where: {
+        email: data.email!,
+      },
+    });
+    if (!findUser) {
+      findUser = await prisma.user.create({
+        data: {
+          email: data.email!,
+          username: data.name!,
+          password: data.id!,
+          isVerified: true,
+          userToken: { create: {} },
+        },
+      });
+    }
+    return toUserResponse(findUser);
   }
 }
