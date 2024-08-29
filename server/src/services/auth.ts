@@ -28,7 +28,6 @@ import {
   verifyRefreshToken,
 } from "../utils/token/auth-token";
 import { oauth2Client } from "../libs/oauth2/google";
-import { User } from "@prisma/client";
 
 export class AuthService {
   static async registerUser(
@@ -261,6 +260,7 @@ export class AuthService {
           username: data.name!,
           password: data.id!,
           isVerified: true,
+          isGoogle: true,
           userToken: { create: {} },
         },
       });
