@@ -11,9 +11,7 @@ export default class RootRouter {
   }
 
   private initializeRoute() {
-    this.router.use("/auth", (req: Request, res: Response) => {
-      res.send("inside auth router");
-    });
+    this.router.use("/auth", this.authRouter.getRouter());
   }
 
   getRouter() {

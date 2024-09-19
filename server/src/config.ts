@@ -5,6 +5,10 @@ const envSchema = z.object({
   JWT_ACCESS_SECRET: z.string(),
   JWT_REFRESH_SECRET: z.string(),
   DATABASE_URL: z.string(),
+  RESEND_API_KEY: z.string(),
+  JWT_RESET_PASSWORD: z.string(),
+  GOOGLE_CLIENT_ID: z.string(),
+  GOOGLE_CLIENT_SECRET: z.string(),
 });
 
 declare global {

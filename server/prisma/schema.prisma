@@ -16,11 +16,12 @@ datasource db {
 
 model User {
   id Int @id @default(autoincrement())
-  email String
+  email String @unique
   password String
   username String
+  isGoogle Boolean @default(false)
   isVerified Boolean @default(false)
-  last_login DateTime
+  last_login DateTime?
   userToken UserToken?
 
   @@map("users")
@@ -28,10 +29,10 @@ model User {
 
 model UserToken {
   id Int @id @default(autoincrement())
-  verification_token Int
-  verification_token_exp DateTime
-  reset_password_token DateTime
-  reset_password_token_exp DateTime
+  verification_token String?
+  verification_token_exp DateTime?
+  reset_password_token String?
+  reset_password_token_exp DateTime?
   user User @relation(fields: [userId], references: [id])
   userId Int @unique
 
